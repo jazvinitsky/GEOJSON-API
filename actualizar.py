@@ -98,6 +98,8 @@ for fuente in FUENTES:
     noticias_extraidas = extraer_datos_noticia(fuente)
     if noticias_extraidas:
         nuevas_noticias.extend(noticias_extraidas)  # Desempaqueta listas anidadas
+        print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
+
 
 # Actualizar solo noticias ya existentes sin coordenadas
 for noticia in datos["features"]:  # Recorremos solo las noticias que ya están en el GeoJSON
