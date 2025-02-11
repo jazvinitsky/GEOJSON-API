@@ -1,9 +1,9 @@
 name: Actualizar Noticias
 
 on:
-  workflow_dispatch:  # 🔹 Esto permite ejecutar manualmente desde GitHub Actions
+  workflow_dispatch:  # Permite ejecución manual
   schedule:
-    - cron: '0 0 1 * *'  # 🔹 Se ejecutará automáticamente el 1 de cada mes
+    - cron: '0 0 1 * *'  # Se ejecuta automáticamente el 1 de cada mes
 
 jobs:
   update-news:
@@ -19,7 +19,7 @@ jobs:
 
       - name: Instalar dependencias
         run: |
-          pip install requests geopy
+          pip install requests geopy geopandas shapely fiona pyproj rtree
 
       - name: Ejecutar el script de actualización
         run: python actualizar_noticias.py
@@ -28,6 +28,6 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git add conflictos_actualizados.geojson
+          git add ConflictosGeorref_final_DEF.geojson
           git commit -m "Actualización automática de noticias"
           git push
