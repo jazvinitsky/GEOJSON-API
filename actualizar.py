@@ -101,7 +101,7 @@ for fuente in FUENTES:
     time.sleep(2)  # Para evitar bloqueos
 
 # Agregar nuevas noticias al GeoJSON si no están duplicadas
-urls_existentes = {f["properties"]["url"] for f in datos["features"]}
+urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
 
 for noticia in nuevas_noticias:
     if noticia["url"] not in urls_existentes:
