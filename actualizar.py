@@ -1,65 +1,89 @@
 import requests
 import json
 import time
+import re
 from geopy.geocoders import Nominatim
 from bs4 import BeautifulSoup
 
-# URLs de noticias sobre contaminación ambiental
-URLS = [
+# Lista de fuentes de noticias
+FUENTES = [
     "https://www.lanacion.com.ar/buscar/agroquimicos",
     "https://www.pagina12.com.ar/buscar?q=agrotoxicos",
-    "https://www.ellitoral.com/buscar?query=agrotoxicos"
+    "https://www.ellitoral.com/buscar?query=agrotoxicos",
+    "https://www.infobae.com/buscar/?q=agrotoxicos",
+    "https://www.perfil.com/buscar/agroquimicos"
+    # Agregar más fuentes aquí...
 ]
 
-# Inicializar el geocodificador para obtener coordenadas de ciudades
+# Diccionario de agroquímicos con sus categorías
+AGROQUIMICOS_CATEGORIAS = {
+    "herbicida": ["glifosato", "2,4-D", "atrazina", "paraquat"],
+    "fungicida": ["mancozeb", "clorotalonil", "tebuconazol"],
+    "insecticida": ["clorpirifos", "imidacloprid", "cipermetrina"]
+}
+
+# Configuración del geolocalizador
 geolocalizador = Nominatim(user_agent="geo_scraper")
 
-def obtener_coordenadas(lugar):
-    """Convierte una ciudad en coordenadas (lat, lon)"""
+def obtener_coordenadas(ubicacion):
+    """Convierte una ciudad/localidad en coordenadas (lat, lon)"""
     try:
-        ubicacion = geolocalizador.geocode(lugar + ", Argentina")
-        if ubicacion:
-            return [ubicacion.longitude, ubicacion.latitude]
-        else:
-            return None
+        ubicacion_info = geolocalizador.geocode(f"{ubicacion}, Argentina")
+        if ubicacion_info:
+            return [ubicacion_info.longitude, ubicacion_info.latitude]
     except:
         return None
+    return None
 
-def obtener_nuevas_noticias():
-    """Scrapea noticias y extrae título, link y ubicación."""
-    nuevas_noticias = []
-    headers = {'User-Agent': 'Mozilla/5.0'}
+def extraer_datos_noticia(url):
+    """Extrae datos clave de una noticia"""
+    try:
+        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        if response.status_code != 200:
+            return None
 
-    for url in URLS:
-        respuesta = requests.get(url, headers=headers)
-        if respuesta.status_code != 200:
-            continue  # Si falla, pasa a la siguiente URL
+        sopa = BeautifulSoup(response.text, "html.parser")
+        texto = sopa.get_text().lower()
+        
+        # Buscar menciones a ubicaciones (ciudades/localidades)
+        ubicacion = None
+        for palabra in texto.split():
+            if "buenos aires" in palabra or "santa fe" in palabra:  # Expandir con más provincias
+                ubicacion = palabra
 
-        sopa = BeautifulSoup(respuesta.text, "html.parser")
-        articulos = sopa.find_all("article")  # Ajustar según cada sitio
+        # Buscar menciones a agua
+        menciona_agua = any(x in texto for x in ["río", "napas", "laguna", "acuífero", "contaminación hídrica"])
+        
+        # Buscar agroquímicos y clasificarlos
+        agroquimicos = []
+        categoria_filtro = []
+        for categoria, lista in AGROQUIMICOS_CATEGORIAS.items():
+            for quimico in lista:
+                if quimico in texto:
+                    agroquimicos.append(quimico)
+                    categoria_filtro.append(categoria)
 
-        for articulo in articulos:
-            titulo = articulo.find("h2") or articulo.find("h3")
-            enlace = articulo.find("a")["href"] if articulo.find("a") else None
-            fecha = "2024-02-10"  # Debería extraerse del sitio si es posible
+        # Determinar si la noticia menciona protestas
+        menciona_protesta = any(x in texto for x in ["denuncia", "movilización", "marcha", "protesta", "juicio"])
 
-            # Ubicación estimada (revisar manualmente los sitios)
-            ubicacion = "Pergamino, Buenos Aires"  # Aquí iría la extracción real
+        # Año de publicación (suponiendo que se puede extraer desde la URL o texto)
+        anio = re.search(r"20\d{2}", url)  # Buscar año en la URL
+        anio = anio.group(0) if anio else "Desconocido"
 
-            if titulo and enlace:
-                coordenadas = obtener_coordenadas(ubicacion)
-                if coordenadas:
-                    nuevas_noticias.append({
-                        "titulo": titulo.text.strip(),
-                        "url": enlace,
-                        "fecha": fecha,
-                        "ubicacion": ubicacion,
-                        "coordenadas": coordenadas
-                    })
-
-        time.sleep(1)  # Para evitar bloqueos
-
-    return nuevas_noticias
+        return {
+            "conflicto": "Noticia sobre agroquímicos",
+            "url": url,
+            "fecha": anio,
+            "fuente": url.split("/")[2],
+            "ubicacion": ubicacion,
+            "coordenadas": obtener_coordenadas(ubicacion) if ubicacion else None,
+            "agua": "Sí" if menciona_agua else "No",
+            "agroquimicos": ", ".join(agroquimicos),
+            "categoria_filtro": ", ".join(set(categoria_filtro)),
+            "protestas": "Sí" if menciona_protesta else "No"
+        }
+    except:
+        return None
 
 # Cargar datos existentes en el GeoJSON
 try:
@@ -68,28 +92,40 @@ try:
 except FileNotFoundError:
     datos = {"type": "FeatureCollection", "features": []}
 
-# Obtener nuevas noticias
-nuevas = obtener_nuevas_noticias()
+# Extraer noticias de las fuentes
+nuevas_noticias = []
+for fuente in FUENTES:
+    noticias_extraidas = extraer_datos_noticia(fuente)
+    if noticias_extraidas:
+        nuevas_noticias.append(noticias_extraidas)
+    time.sleep(2)  # Para evitar bloqueos
 
-# Agregar nuevas noticias al GeoJSON
-for noticia in nuevas:
-    datos["features"].append({
-        "type": "Feature",
-        "properties": {
-            "titulo": noticia["titulo"],
-            "url": noticia["url"],
-            "fecha": noticia["fecha"],
-            "ubicacion": noticia["ubicacion"]
-        },
-        "geometry": {
-            "type": "Point",
-            "coordinates": noticia["coordenadas"]
-        }
-    })
+# Agregar nuevas noticias al GeoJSON si no están duplicadas
+urls_existentes = {f["properties"]["url"] for f in datos["features"]}
 
-# Guardar la actualización en el GeoJSON
+for noticia in nuevas_noticias:
+    if noticia["url"] not in urls_existentes:
+        datos["features"].append({
+            "type": "Feature",
+            "properties": {
+                "conflicto": noticia["conflicto"],
+                "url": noticia["url"],
+                "fecha": noticia["fecha"],
+                "fuente": noticia["fuente"],
+                "ubicacion": noticia["ubicacion"],
+                "agua": noticia["agua"],
+                "agroquimicos": noticia["agroquimicos"],
+                "categoria_filtro": noticia["categoria_filtro"],
+                "protestas": noticia["protestas"]
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": noticia["coordenadas"] if noticia["coordenadas"] else [0, 0]
+            }
+        })
+
+# Guardar el nuevo GeoJSON
 with open("conflictos.geojson", "w", encoding="utf-8") as f:
     json.dump(datos, f, indent=4, ensure_ascii=False)
 
 print("✅ Base de datos actualizada con nuevas noticias.")
-
