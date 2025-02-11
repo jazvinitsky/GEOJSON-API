@@ -5,6 +5,51 @@ import re
 from geopy.geocoders import Nominatim
 from bs4 import BeautifulSoup
 
+# Lista de fuentes de noticias
+FUENTES = [
+    "https://www.lanacion.com.ar",
+    "https://www.pagina12.com.ar",
+    "https://www.ellitoral.com",
+    "https://www.infobae.com",
+    "https://www.perfil.com",
+    "https://www.clarin.com",
+    "https://tn.com.ar",
+    "https://www.ambito.com",
+    "https://www.argentinamunicipal.com.ar",
+    "https://www.diarionecochea.com",
+    "https://www.eldiarioar.com",
+    "https://www.lavoz.com.ar",
+    "https://www.tiempoar.com.ar",
+    "https://www.lacapital.com.ar",
+    "https://www.elonce.com",
+    "https://www.chacodiapordia.com",
+    "https://www.mdzol.com",
+    "https://www.misionesonline.net",
+    "https://www.eltribuno.com",
+    "https://www.unoentrerios.com.ar",
+    "https://www.lagaceta.com.ar",
+    "https://www.losandes.com.ar",
+    "https://www.elcomercial.com.ar",
+    "https://www.cadena3.com",
+    "https://www.era-verde.com.ar",
+    "https://www.elpopular.com.ar",
+    "https://www.laverdadonline.com",
+    "https://www.noticiaslasflores.com.ar",
+    "https://www.realpolitik.com.ar",
+    "https://www.bichosdecampo.com",
+    "https://www.laizquierdadiario.com",
+    "https://www.eldiarionorte.com.ar",
+    "https://www.ruralaldia.com.ar",
+    "https://www.agrositio.com.ar",
+    "https://www.elmensajerodiario.com.ar",
+    "https://www.lavozdelpueblo.com.ar",
+    "https://www.entrelineas.info",
+    "https://www.quedigital.com.ar",
+    "https://www.elecodetandil.com.ar",
+    "https://www.lanueva.com",
+    "https://www.infocielo.com"
+]
+
 # 📌 Configuración del geolocalizador
 geolocalizador = Nominatim(user_agent="geo_scraper")
 
