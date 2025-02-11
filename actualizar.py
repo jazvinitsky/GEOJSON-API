@@ -99,6 +99,32 @@ for fuente in FUENTES:
     if noticias_extraidas:
         nuevas_noticias.extend(noticias_extraidas)  # Desempaqueta listas anidadas
         print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
+# Agregar nuevas noticias al GeoJSON si no están duplicadas
+urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
+
+for noticia in nuevas_noticias:
+    if noticia["url"] not in urls_existentes:
+        datos["features"].append({
+            "type": "Feature",
+            "properties": {
+                "conflicto": noticia["conflicto"],
+                "url": noticia["url"],
+                "fecha": noticia["fecha"],
+                "fuente": noticia["fuente"],
+                "ubicacion": noticia["ubicacion"],
+                "agua": noticia["agua"],
+                "agroquimicos": noticia["agroquimicos"],
+                "categoria_filtro": noticia["categoria_filtro"],
+                "protestas": noticia["protestas"]
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": noticia["coordenadas"]
+            }
+        })
+        print(f"✅ Noticia agregada al GeoJSON: {noticia['conflicto']} - {noticia['url']}")
+
+print(f"📌 Total de noticias en el archivo después de la actualización: {len(datos['features'])}")
 
 
 # Actualizar solo noticias ya existentes sin coordenadas
