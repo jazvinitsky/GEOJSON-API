@@ -7,12 +7,47 @@ from bs4 import BeautifulSoup
 
 # Lista de fuentes de noticias
 FUENTES = [
-    "https://www.lanacion.com.ar/buscar/agroquimicos",
-    "https://www.pagina12.com.ar/buscar?q=agrotoxicos",
-    "https://www.ellitoral.com/buscar?query=agrotoxicos",
-    "https://www.infobae.com/buscar/?q=agrotoxicos",
-    "https://www.perfil.com/buscar/agroquimicos"
-    # Agregar más fuentes aquí...
+    "https://www.lanacion.com.ar",
+    "https://www.pagina12.com.ar",
+    "https://www.ellitoral.com",
+    "https://www.infobae.com",
+    "https://www.perfil.com",
+    "https://www.clarin.com",
+    "https://tn.com.ar",
+    "https://www.ambito.com",
+    "https://www.argentinamunicipal.com.ar",
+    "https://www.diarionecochea.com",
+    "https://www.eldiarioar.com",
+    "https://www.lavoz.com.ar",
+    "https://www.tiempoar.com.ar",
+    "https://www.lacapital.com.ar",
+    "https://www.elonce.com",
+    "https://www.chacodiapordia.com",
+    "https://www.mdzol.com",
+    "https://www.misionesonline.net",
+    "https://www.eltribuno.com",
+    "https://www.unoentrerios.com.ar",
+    "https://www.lagaceta.com.ar",
+    "https://www.losandes.com.ar",
+    "https://www.elcomercial.com.ar",
+    "https://www.cadena3.com",
+    "https://www.era-verde.com.ar",
+    "https://www.elpopular.com.ar",
+    "https://www.laverdadonline.com",
+    "https://www.noticiaslasflores.com.ar",
+    "https://www.realpolitik.com.ar",
+    "https://www.bichosdecampo.com",
+    "https://www.laizquierdadiario.com",
+    "https://www.eldiarionorte.com.ar",
+    "https://www.ruralaldia.com.ar",
+    "https://www.agrositio.com.ar",
+    "https://www.elmensajerodiario.com.ar",
+    "https://www.lavozdelpueblo.com.ar",
+    "https://www.entrelineas.info",
+    "https://www.quedigital.com.ar",
+    "https://www.elecodetandil.com.ar",
+    "https://www.lanueva.com",
+    "https://www.infocielo.com"
 ]
 
 # Diccionario de agroquímicos con sus categorías
@@ -35,8 +70,40 @@ def obtener_coordenadas(ubicacion):
         return None
     return None
 
-import requests
-from bs4 import BeautifulSoup
+def obtener_enlaces_de_busqueda(url_base):
+    """Extrae enlaces de artículos reales desde la página principal del medio"""
+    try:
+        response = requests.get(url_base, headers={'User-Agent': 'Mozilla/5.0'})
+        if response.status_code != 200:
+            print(f"⚠️ No se pudo acceder a: {url_base}")
+            return []
+
+        sopa = BeautifulSoup(response.text, "html.parser")
+        enlaces = []
+
+        for link in sopa.find_all("a", href=True):
+            href = link["href"]
+            
+            # 📌 Reglas específicas para cada medio
+            if "pagina12.com.ar" in url_base and "/nota/" in href:
+                enlaces.append("https://www.pagina12.com.ar" + href)
+            elif "lanacion.com.ar" in url_base and "/nota/" in href:
+                enlaces.append("https://www.lanacion.com.ar" + href)
+            elif "infobae.com" in url_base and ("/sociedad/" in href or "/politica/" in href):
+                enlaces.append("https://www.infobae.com" + href)
+            elif "clarin.com" in url_base and "/politica/" in href:
+                enlaces.append("https://www.clarin.com" + href)
+            elif "lavoz.com.ar" in url_base and "/ciudadanos/" in href:
+                enlaces.append("https://www.lavoz.com.ar" + href)
+            elif "losandes.com.ar" in url_base and "/article/view" in href:
+                enlaces.append("https://www.losandes.com.ar" + href)
+
+        print(f"🔗 Se encontraron {len(enlaces)} artículos en {url_base}")
+        return enlaces[:5]  # Limitar para evitar demasiadas solicitudes
+
+    except Exception as e:
+        print(f"❌ Error al obtener enlaces de {url_base}: {e}")
+        return []
 
 def extraer_datos_noticia(url):
     """Extrae datos clave de una noticia"""
@@ -101,51 +168,10 @@ def extraer_datos_noticia(url):
         }
 
         print(f"✅ Noticia extraída: {noticia}")
-        return noticia
+        return noticia  # ✅ AQUÍ TERMINA LA FUNCIÓN CORRECTAMENTE
 
     except Exception as e:
         print(f"❌ Error al extraer la noticia: {url} - {e}")
-        return None
-
-        
-        # Buscar menciones a ubicaciones (ciudades/localidades)
-        ubicacion = None
-        for palabra in texto.split():
-            if "buenos aires" in palabra or "santa fe" in palabra:  # Expandir con más provincias
-                ubicacion = palabra
-
-        # Buscar menciones a agua
-        menciona_agua = any(x in texto for x in ["río", "napas", "laguna", "acuífero", "contaminación hídrica"])
-        
-        # Buscar agroquímicos y clasificarlos
-        agroquimicos = []
-        categoria_filtro = []
-        for categoria, lista in AGROQUIMICOS_CATEGORIAS.items():
-            for quimico in lista:
-                if quimico in texto:
-                    agroquimicos.append(quimico)
-                    categoria_filtro.append(categoria)
-
-        # Determinar si la noticia menciona protestas
-        menciona_protesta = any(x in texto for x in ["denuncia", "movilización", "marcha", "protesta", "juicio"])
-
-        # Año de publicación (suponiendo que se puede extraer desde la URL o texto)
-        anio = re.search(r"20\d{2}", url)  # Buscar año en la URL
-        anio = anio.group(0) if anio else "Desconocido"
-
-        return {
-            "conflicto": "Noticia sobre agroquímicos",
-            "url": url,
-            "fecha": anio,
-            "fuente": url.split("/")[2],
-            "ubicacion": ubicacion,
-            "coordenadas": obtener_coordenadas(ubicacion) if ubicacion else None,
-            "agua": "Sí" if menciona_agua else "No",
-            "agroquimicos": ", ".join(agroquimicos),
-            "categoria_filtro": ", ".join(set(categoria_filtro)),
-            "protestas": "Sí" if menciona_protesta else "No"
-        }
-    except:
         return None
 
 # Cargar datos existentes en el GeoJSON
@@ -167,7 +193,6 @@ for fuente in FUENTES:
     time.sleep(2)  # Para evitar bloqueos
 
 print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
-
 
 for noticia in nuevas_noticias:
     print(f"🛠 Tipo de noticia: {type(noticia)} - Contenido: {noticia}")  # Depuración
@@ -199,21 +224,49 @@ for noticia in nuevas_noticias:
 
 print(f"📌 Total de noticias en el archivo después de la actualización: {len(datos['features'])}")
 
+# 📌 Recorrer todas las fuentes y extraer noticias nuevas
+nuevas_noticias = []
+for fuente in FUENTES:
+    enlaces_noticias = obtener_enlaces_de_busqueda(fuente)  # Obtener los artículos reales
+    for enlace in enlaces_noticias:
+        noticia = extraer_datos_noticia(enlace)
+        if noticia:
+            nuevas_noticias.append(noticia)
 
-# Actualizar solo noticias ya existentes sin coordenadas
-for noticia in datos["features"]:  # Recorremos solo las noticias que ya están en el GeoJSON
-    if noticia["geometry"]["coordinates"] == [0, 0]:  # Si la noticia no tiene coordenadas correctas
-        print(f"🔄 Actualizando coordenadas para: {noticia['properties']['conflicto']}")
-        coordenadas_actualizadas = obtener_coordenadas(noticia["properties"]["ubicacion"])
+    time.sleep(2)  # Para evitar bloqueos entre solicitudes
 
-        if coordenadas_actualizadas:
-            noticia["geometry"]["coordinates"] = coordenadas_actualizadas
-            print(f"✅ Coordenadas actualizadas: {noticia['geometry']['coordinates']}")
-        else:
-            print(f"⚠️ No se encontraron coordenadas para {noticia['properties']['ubicacion']}")
+print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
 
-# Guardar el nuevo GeoJSON
+# 📌 Agregar noticias nuevas al GeoJSON si no están duplicadas
+urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
+
+for noticia in nuevas_noticias:
+    if noticia["url"] not in urls_existentes:
+        datos["features"].append({
+            "type": "Feature",
+            "properties": {
+                "conflicto": noticia["conflicto"],
+                "url": noticia["url"],
+                "fecha": noticia["fecha"],
+                "fuente": noticia["fuente"],
+                "ubicacion": noticia["ubicacion"],
+                "agua": noticia["agua"],
+                "agroquimicos": noticia["agroquimicos"],
+                "categoria_filtro": noticia["categoria_filtro"],
+                "protestas": noticia["protestas"]
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": noticia["coordenadas"]
+            }
+        })
+        print(f"✅ Noticia agregada al GeoJSON: {noticia['conflicto']} - {noticia['url']}")
+
+print(f"📌 Total de noticias en el archivo después de la actualización: {len(datos['features'])}")
+
+# 📌 Guardar el nuevo GeoJSON con las noticias nuevas y corregidas
 with open("ConflictosGeorref_final_DEF.geojson", "w", encoding="utf-8") as f:
     json.dump(datos, f, indent=4, ensure_ascii=False)
 
 print("✅ Base de datos actualizada con nuevas noticias.")
+
