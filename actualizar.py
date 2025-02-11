@@ -180,16 +180,41 @@ def buscar_noticias_gnews(query):
         print(f"❌ Error al buscar en GNews: {e}")
         return []
 
-# 📌 Buscar noticias en GNews sobre contaminación por agroquímicos
-nuevas_noticias = []  # Asegurar que la lista esté definida antes de usarla
-
+# 📌 Buscar noticias en GNews con múltiples consultas mejoradas
 consultas_gnews = [
-    "contaminación por agroquímicos",
-    "agrotóxicos en Argentina",
-    "fumigaciones y contaminación",
-    "contaminación por pesticidas"
+    "agroquímicos argentina",
+    "contaminación por agroquímicos argentina",
+    "pesticidas argentina",
+    "uso de agroquímicos en argentina",
+    "fumigaciones con agroquímicos argentina",
+    "glifosato en argentina",
+    "contaminación ambiental argentina",
+    "impacto de los agroquímicos en argentina",
+    "toxicidad de los pesticidas argentina",
+    "residuos de pesticidas en el agua argentina",
+    "intoxicación por pesticidas argentina",
+    "enfermedades por agroquímicos argentina",
+    "cáncer y agroquímicos argentina",
+    "protestas por fumigaciones argentina",
+    "denuncias por uso de pesticidas argentina",
+    "vecinos denuncian fumigaciones argentina",
+    "juicios por contaminación con agroquímicos argentina",
+    "impacto de los pesticidas en la salud argentina",
+    "prohibiciones de agroquímicos argentina",
+    "casos de contaminación por pesticidas argentina",
+    "agroquímicos en el agua argentina",
+    "contaminación del suelo por agroquímicos argentina",
+    "napas contaminadas por pesticidas argentina",
+    "plaguicidas en el agua potable argentina",
+    "ríos contaminados con pesticidas argentina",
+    "leyes sobre agroquímicos en argentina",
+    "regulación del uso de pesticidas en argentina",
+    "proyectos de ley sobre agroquímicos argentina",
+    "normativas sobre fumigaciones en argentina",
+    "uso de pesticidas cerca de escuelas en argentina"
 ]
 
+# 📌 Recorrer cada consulta y obtener noticias
 for consulta in consultas_gnews:
     enlaces_gnews = buscar_noticias_gnews(consulta)
     for enlace in enlaces_gnews:
