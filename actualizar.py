@@ -93,12 +93,6 @@ def estandarizar_ubicacion(texto):
 
     return ubicacion
 
-# 📌 Función para buscar enlaces en Google (placeholder)
-def buscar_en_google(consulta):
-    """Simulación de búsqueda en Google (debe integrarse con un servicio real)"""
-    print(f"🔎 Simulando búsqueda en Google: {consulta}")
-    return []  # ⚠ Actualmente no devuelve resultados
-
 # 📌 Función para extraer datos de una noticia
 def extraer_datos_noticia(url):
     """Extrae datos clave de una noticia"""
@@ -165,6 +159,43 @@ def extraer_datos_noticia(url):
     except Exception as e:
         print(f"❌ Error al extraer la noticia: {url} - {e}")
         return None
+import requests
+
+def buscar_noticias_gnews(query):
+    """Busca noticias relacionadas con la consulta en GNews API"""
+    API_KEY = "823733a0cf9138d10fd55c3a0ae5f72fS"  # Reemplaza con tu clave real
+    URL = f"https://gnews.io/api/v4/search?q={query}&lang=es&country=ar&max=10&token={API_KEY}"
+
+    try:
+        response = requests.get(URL)
+        data = response.json()
+
+        if "articles" in data:
+            return [articulo["url"] for articulo in data["articles"]]
+        else:
+            print(f"⚠️ No se encontraron resultados en GNews para: {query}")
+            return []
+
+    except Exception as e:
+        print(f"❌ Error al buscar en GNews: {e}")
+        return []
+
+# 📌 Buscar noticias en GNews sobre contaminación por agroquímicos
+nuevas_noticias = []  # Asegurar que la lista esté definida antes de usarla
+
+consultas_gnews = [
+    "contaminación por agroquímicos",
+    "agrotóxicos en Argentina",
+    "fumigaciones y contaminación",
+    "contaminación por pesticidas"
+]
+
+for consulta in consultas_gnews:
+    enlaces_gnews = buscar_noticias_gnews(consulta)
+    for enlace in enlaces_gnews:
+        noticia = extraer_datos_noticia(enlace)
+        if noticia:
+            nuevas_noticias.append(noticia)
 
 # 📌 Cargar datos existentes en el GeoJSON
 try:
@@ -172,17 +203,6 @@ try:
         datos = json.load(f)
 except FileNotFoundError:
     datos = {"type": "FeatureCollection", "features": []}
-
-# 📌 Buscar noticias en Google para todas las fuentes
-nuevas_noticias = []
-consultas_google = [f"contaminación por agroquímicos site:{fuente}" for fuente in FUENTES]
-
-for consulta in consultas_google:
-    enlaces_google = buscar_en_google(consulta)
-    for enlace in enlaces_google:
-        noticia = extraer_datos_noticia(enlace)
-        if noticia:
-            nuevas_noticias.append(noticia)
 
 # 📌 Agregar noticias nuevas al GeoJSON
 urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
