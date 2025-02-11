@@ -5,7 +5,7 @@ import re
 from geopy.geocoders import Nominatim
 from bs4 import BeautifulSoup
 
-# Lista de fuentes de noticias
+# 📌 Lista de fuentes de noticias (actualizada con medios nacionales y locales)
 FUENTES = [
     "https://www.lanacion.com.ar",
     "https://www.pagina12.com.ar",
@@ -47,7 +47,33 @@ FUENTES = [
     "https://www.quedigital.com.ar",
     "https://www.elecodetandil.com.ar",
     "https://www.lanueva.com",
-    "https://www.infocielo.com"
+    "https://www.infocielo.com",
+    "https://elespectador.com",
+    "https://www.eldiariocba.com.ar",
+    "https://www.memo.com.ar",
+    "https://www.rionegro.com.ar",
+    "https://www.elliberal.com.ar",
+    "https://www.laarena.com.ar",
+    "https://www.tiempodesanjuan.com",
+    "https://www.elciudadanoweb.com",
+    "https://www.puntal.com.ar",
+    "https://www.fundeps.org",
+    "https://www.eltrdebaldia.com",
+    "https://www.mercedesya.com",
+    "https://www.bragadoinforma.com.ar",
+    "https://www.canalabierto.com.ar",
+    "https://www.periodicoimpacto.com.ar",
+    "https://www.elbalcarce.com",
+    "https://www.eltime.com.ar",
+    "https://www.realpolitik.com.ar",
+    "https://www.eltiempo.com.ar",
+    "https://www.abcdehoy.com.ar",
+    "https://www.diariolaverdad.com.ar",
+    "https://www.elcastellidigital.com.ar",
+    "https://www.ramonactualidad.com.ar",
+    "https://www.elemental.com.ar",
+    "https://www.agrositio.com.ar",
+    "https://www.noticiasguido.com.ar"
 ]
 
 # 📌 Configuración del geolocalizador
@@ -64,34 +90,32 @@ def obtener_coordenadas(ubicacion):
         return None
     return None
 
-# 📌 Función para estandarizar ubicaciones
-def estandarizar_ubicacion(texto):
-    """Busca y estandariza la ubicación en el formato (ciudad, provincia)"""
-    provincias = {
-        "buenos aires": "Buenos Aires",
-        "santa fe": "Santa Fe",
-        "cordoba": "Cordoba",
-        "mendoza": "Mendoza",
-        "entre rios": "Entre Rios",
-        "chaco": "Chaco",
-        "misiones": "Misiones",
-        "corrientes": "Corrientes",
-        "neuquen": "Neuquen",
-        "rio negro": "Rio Negro",
-        "tucuman": "Tucuman"
-    }
+# 📌 Función para buscar enlaces en un portal de noticias
+def obtener_enlaces_de_busqueda(url_base):
+    """Extrae enlaces de artículos desde la página principal del medio"""
+    try:
+        response = requests.get(url_base, headers={'User-Agent': 'Mozilla/5.0'})
+        if response.status_code != 200:
+            print(f"⚠️ No se pudo acceder a: {url_base}")
+            return []
 
-    ubicacion = None
-    for provincia in provincias:
-        if provincia in texto.lower():
-            coincidencias = re.findall(r"([A-Z][a-z]+) (?:de |en |, )?" + provincia, texto, re.IGNORECASE)
-            if coincidencias:
-                localidad = coincidencias[0].strip()
-                ubicacion = f"{localidad}, {provincias[provincia]}"
-            else:
-                ubicacion = provincias[provincia]
+        sopa = BeautifulSoup(response.text, "html.parser")
+        enlaces = []
 
-    return ubicacion
+        for link in sopa.find_all("a", href=True):
+            href = link["href"]
+            if any(tema in href.lower() for tema in ["agroquimico", "pesticida", "contaminacion", "fumigacion"]):
+                if href.startswith("http"):
+                    enlaces.append(href)
+                else:
+                    enlaces.append(url_base + href)
+
+        print(f"🔗 Se encontraron {len(enlaces)} artículos en {url_base}")
+        return enlaces[:5]  # Limitar para evitar demasiadas solicitudes
+
+    except Exception as e:
+        print(f"❌ Error al obtener enlaces de {url_base}: {e}")
+        return []
 
 # 📌 Función para extraer datos de una noticia
 def extraer_datos_noticia(url):
@@ -116,27 +140,16 @@ def extraer_datos_noticia(url):
                 break
 
         # 📌 Extraer ubicación
-        ubicacion = estandarizar_ubicacion(texto)
+        ubicacion = None
+        for palabra in texto.split():
+            if palabra in ["buenos", "santa", "cordoba", "mendoza", "chaco", "misiones"]:
+                ubicacion = palabra.capitalize() + ", Argentina"
+                break
+
         coordenadas = obtener_coordenadas(ubicacion) if ubicacion else None
 
-        # 📌 Buscar mención a agua
+        # 📌 Buscar mención a agroquímicos
         menciona_agua = any(agua in texto for agua in ["río", "laguna", "napas", "agua", "contaminación hídrica"])
-
-        # 📌 Buscar agroquímicos
-        AGROQUIMICOS_CATEGORIAS = {
-            "herbicida": ["glifosato", "atrazina", "2,4-D"],
-            "insecticida": ["clorpirifos", "imidacloprid", "cipermetrina"],
-            "fungicida": ["mancozeb", "carbendazim", "triazol"]
-        }
-        agroquimicos = []
-        categoria_filtro = []
-        for categoria, lista in AGROQUIMICOS_CATEGORIAS.items():
-            for quimico in lista:
-                if quimico in texto:
-                    agroquimicos.append(quimico)
-                    categoria_filtro.append(categoria)
-
-        # 📌 Detectar protestas o denuncias
         menciona_protesta = any(palabra in texto for palabra in ["denuncia", "protesta", "marcha", "juicio", "vecinos", "movilización"])
 
         # 📌 Estructurar la noticia
@@ -146,10 +159,8 @@ def extraer_datos_noticia(url):
             "fecha": fecha,
             "fuente": url.split("/")[2],
             "ubicacion": ubicacion if ubicacion else "Desconocida",
-            "coordenadas": coordenadas if coordenadas else [0, 0],  # 🔹 Siempre devuelve coordenadas válidas
+            "coordenadas": coordenadas if coordenadas else [0, 0],
             "agua": "Sí" if menciona_agua else "No",
-            "agroquimicos": ", ".join(agroquimicos),
-            "categoria_filtro": ", ".join(categoria_filtro),
             "protestas": "Sí" if menciona_protesta else "No"
         }
 
@@ -159,93 +170,18 @@ def extraer_datos_noticia(url):
     except Exception as e:
         print(f"❌ Error al extraer la noticia: {url} - {e}")
         return None
-import requests
 
-def buscar_noticias_gnews(query):
-    """Busca noticias relacionadas con la consulta en GNews API"""
-    API_KEY = "823733a0cf9138d10fd55c3a0ae5f72fS"  # Reemplaza con tu clave real
-    URL = f"https://gnews.io/api/v4/search?q={query}&lang=es&country=ar&max=10&token={API_KEY}"
-
-    try:
-        response = requests.get(URL)
-        data = response.json()
-
-        if "articles" in data:
-            return [articulo["url"] for articulo in data["articles"]]
-        else:
-            print(f"⚠️ No se encontraron resultados en GNews para: {query}")
-            return []
-
-    except Exception as e:
-        print(f"❌ Error al buscar en GNews: {e}")
-        return []
-
-# 📌 Buscar noticias en GNews con múltiples consultas mejoradas
-consultas_gnews = [
-    "agroquímicos argentina",
-    "contaminación por agroquímicos argentina",
-    "pesticidas argentina",
-    "uso de agroquímicos en argentina",
-    "fumigaciones con agroquímicos argentina",
-    "glifosato en argentina",
-    "contaminación ambiental argentina",
-    "impacto de los agroquímicos en argentina",
-    "toxicidad de los pesticidas argentina",
-    "residuos de pesticidas en el agua argentina",
-    "intoxicación por pesticidas argentina",
-    "enfermedades por agroquímicos argentina",
-    "cáncer y agroquímicos argentina",
-    "protestas por fumigaciones argentina",
-    "denuncias por uso de pesticidas argentina",
-    "vecinos denuncian fumigaciones argentina",
-    "juicios por contaminación con agroquímicos argentina",
-    "impacto de los pesticidas en la salud argentina",
-    "prohibiciones de agroquímicos argentina",
-    "casos de contaminación por pesticidas argentina",
-    "agroquímicos en el agua argentina",
-    "contaminación del suelo por agroquímicos argentina",
-    "napas contaminadas por pesticidas argentina",
-    "plaguicidas en el agua potable argentina",
-    "ríos contaminados con pesticidas argentina",
-    "leyes sobre agroquímicos en argentina",
-    "regulación del uso de pesticidas en argentina",
-    "proyectos de ley sobre agroquímicos argentina",
-    "normativas sobre fumigaciones en argentina",
-    "uso de pesticidas cerca de escuelas en argentina"
-]
-
-# 📌 Recorrer cada consulta y obtener noticias
-for consulta in consultas_gnews:
-    enlaces_gnews = buscar_noticias_gnews(consulta)
-    for enlace in enlaces_gnews:
+# 📌 Extraer noticias de todas las fuentes
+nuevas_noticias = []
+for fuente in FUENTES:
+    enlaces_noticias = obtener_enlaces_de_busqueda(fuente)
+    for enlace in enlaces_noticias:
         noticia = extraer_datos_noticia(enlace)
         if noticia:
             nuevas_noticias.append(noticia)
 
-# 📌 Cargar datos existentes en el GeoJSON
-try:
-    with open("ConflictosGeorref_final_DEF.geojson", "r", encoding="utf-8") as f:
-        datos = json.load(f)
-except FileNotFoundError:
-    datos = {"type": "FeatureCollection", "features": []}
-
-# 📌 Agregar noticias nuevas al GeoJSON
-urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
-
-for noticia in nuevas_noticias:
-    if noticia["url"] not in urls_existentes:
-        datos["features"].append({
-            "type": "Feature",
-            "properties": noticia,
-            "geometry": {
-                "type": "Point",
-                "coordinates": noticia["coordenadas"]
-            }
-        })
-        print(f"✅ Noticia agregada al GeoJSON: {noticia['conflicto']} - {noticia['url']}")
-
-# 📌 Guardar el nuevo GeoJSON
+# 📌 Guardar en GeoJSON
 with open("ConflictosGeorref_final_DEF.geojson", "w", encoding="utf-8") as f:
-    json.dump(datos, f, indent=4, ensure_ascii=False)
+    json.dump(nuevas_noticias, f, indent=4, ensure_ascii=False)
 
 print("✅ Base de datos actualizada con nuevas noticias.")
