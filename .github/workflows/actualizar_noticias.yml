@@ -1,8 +1,9 @@
 name: Actualizar Noticias
 
 on:
+  workflow_dispatch:  # 🔹 Esto permite ejecutar manualmente desde GitHub Actions
   schedule:
-    - cron: '0 0 1 * *'  # Se ejecuta el primer día de cada mes a las 00:00 UTC
+    - cron: '0 0 1 * *'  # 🔹 Se ejecutará automáticamente el 1 de cada mes
 
 jobs:
   update-news:
