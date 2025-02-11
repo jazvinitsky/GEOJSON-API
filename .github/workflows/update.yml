@@ -17,8 +17,10 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Instalar dependencias
-        run: pip install requests beautifulsoup4
+             - name: Instalar dependencias
+        run: pip install requests beautifulsoup4 geopy
+
+
 
       - name: Ejecutar el script de actualización
         run: python actualizar.py
