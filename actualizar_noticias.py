@@ -8,7 +8,7 @@ from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="geo_conflictos")
 
 # API de NewsAPI (Obtén tu API Key en https://newsapi.org/)
-NEWS_API_KEY = "TU_API_KEY"
+NEWS_API_KEY = "cd31ff8bc0c44cb7bd729c4de52b2068"
 
 # Palabras clave para búsqueda
 keywords = [
