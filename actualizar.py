@@ -97,12 +97,22 @@ nuevas_noticias = []
 for fuente in FUENTES:
     noticias_extraidas = extraer_datos_noticia(fuente)
     if noticias_extraidas:
-        nuevas_noticias.extend(noticias_extraidas)  # Desempaqueta listas anidadas
-        print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
-# Agregar nuevas noticias al GeoJSON si no están duplicadas
-urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
+        if isinstance(noticias_extraidas, list):  # Asegurar que es una lista
+            nuevas_noticias.extend(noticias_extraidas)  
+        else:
+            print(f"⚠️ Advertencia: {fuente} devolvió un tipo inesperado: {type(noticias_extraidas)}")
+    time.sleep(2)  # Para evitar bloqueos
+
+print(f"🔍 Se encontraron {len(nuevas_noticias)} noticias nuevas para agregar.")
+
 
 for noticia in nuevas_noticias:
+    print(f"🛠 Tipo de noticia: {type(noticia)} - Contenido: {noticia}")  # Depuración
+
+    if not isinstance(noticia, dict):  # Verificar si noticia es un diccionario
+        print(f"❌ ERROR: noticia con formato incorrecto, no es un diccionario: {noticia}")
+        continue  # Saltar esta noticia si tiene formato incorrecto
+
     if noticia["url"] not in urls_existentes:
         datos["features"].append({
             "type": "Feature",
