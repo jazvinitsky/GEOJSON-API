@@ -87,8 +87,8 @@ def extraer_datos_noticia(url):
 
 # Cargar datos existentes en el GeoJSON
 try:
-        with open("ConflictosGeorref_final_DEF.geojson", "r", encoding="utf-8") as f:
-        datos = json.load(f)
+    with open("ConflictosGeorref_final_DEF.geojson", "r", encoding="utf-8") as f:
+        datos = json.load(f)  # <-- Esta línea estaba mal indentada
 except FileNotFoundError:
     datos = {"type": "FeatureCollection", "features": []}
 
