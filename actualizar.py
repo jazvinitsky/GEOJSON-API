@@ -87,7 +87,7 @@ def extraer_datos_noticia(url):
 
 # Cargar datos existentes en el GeoJSON
 try:
-    with open("conflictos.geojson", "r", encoding="utf-8") as f:
+        with open("ConflictosGeorref_final_DEF.geojson", "r", encoding="utf-8") as f:
         datos = json.load(f)
 except FileNotFoundError:
     datos = {"type": "FeatureCollection", "features": []}
@@ -125,7 +125,7 @@ for noticia in nuevas_noticias:
         })
 
 # Guardar el nuevo GeoJSON
-with open("conflictos.geojson", "w", encoding="utf-8") as f:
+with open("ConflictosGeorref_final_DEF.geojson", "w", encoding="utf-8") as f:
     json.dump(datos, f, indent=4, ensure_ascii=False)
 
 print("✅ Base de datos actualizada con nuevas noticias.")
