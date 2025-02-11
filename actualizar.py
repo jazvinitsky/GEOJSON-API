@@ -100,51 +100,17 @@ for fuente in FUENTES:
         nuevas_noticias.append(noticias_extraidas)
     time.sleep(2)  # Para evitar bloqueos
 
-# Agregar nuevas noticias al GeoJSON si no están duplicadas
-urls_existentes = {f["properties"]["url"] for f in datos["features"] if "url" in f["properties"]}
+# Actualizar solo noticias ya existentes sin coordenadas
+for noticia in datos["features"]:  # Recorremos solo las noticias que ya están en el GeoJSON
+    if noticia["geometry"]["coordinates"] == [0, 0]:  # Si la noticia no tiene coordenadas correctas
+        print(f"🔄 Actualizando coordenadas para: {noticia['properties']['conflicto']}")
+        coordenadas_actualizadas = obtener_coordenadas(noticia["properties"]["ubicacion"])
 
-for noticia in nuevas_noticias:
-    if noticia["url"] not in urls_existentes:
-        datos["features"].append({
-            "type": "Feature",
-            "properties": {
-                "conflicto": noticia["conflicto"],
-                "url": noticia["url"],
-                "fecha": noticia["fecha"],
-                "fuente": noticia["fuente"],
-                "ubicacion": noticia["ubicacion"],
-                "agua": noticia["agua"],
-                "agroquimicos": noticia["agroquimicos"],
-                "categoria_filtro": noticia["categoria_filtro"],
-                "protestas": noticia["protestas"]
-            },
-          if noticia["coordenadas"]:  # Solo agrega si hay coordenadas
-    datos["features"].append({
-        "type": "Feature",
-        "properties": {
-            "conflicto": noticia["conflicto"],
-            "url": noticia["url"],
-            "fecha": noticia["fecha"],
-            "fuente": noticia["fuente"],
-            "ubicacion": noticia["ubicacion"],
-            "agua": noticia["agua"],
-            "agroquimicos": noticia["agroquimicos"],
-            "categoria_filtro": noticia["categoria_filtro"],
-            "protestas": noticia["protestas"]
-        },
-        "geometry": {
-            "type": "Point",
-            "coordinates": noticia["coordenadas"]
-        }
-    })
-    print(f"🟢 Agregada noticia: {noticia['conflicto']} con coordenadas {noticia['coordenadas']}")
-else:
-    print(f"🚫 Noticia descartada por falta de coordenadas: {noticia['url']}")
-
-else:
-    print(f"🚫 Noticia descartada por falta de coordenadas: {noticia['url']}")
-            }
-        })
+        if coordenadas_actualizadas:
+            noticia["geometry"]["coordinates"] = coordenadas_actualizadas
+            print(f"✅ Coordenadas actualizadas: {noticia['geometry']['coordinates']}")
+        else:
+            print(f"⚠️ No se encontraron coordenadas para {noticia['properties']['ubicacion']}")
 
 # Guardar el nuevo GeoJSON
 with open("ConflictosGeorref_final_DEF.geojson", "w", encoding="utf-8") as f:
