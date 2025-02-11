@@ -1,4 +1,26 @@
 {
     "type": "FeatureCollection",
-    "features": []
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "conflicto": "Noticia sobre agroquímicos",
+                "url": "https://www.pagina12.com.ar/buscar?q=agrotoxicos",
+                "fecha": "Desconocido",
+                "fuente": "www.pagina12.com.ar",
+                "ubicacion": null,
+                "agua": "Sí",
+                "agroquimicos": "glifosato",
+                "categoria_filtro": "herbicida",
+                "protestas": "No"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    0,
+                    0
+                ]
+            }
+        }
+    ]
 }
