@@ -35,15 +35,78 @@ def obtener_coordenadas(ubicacion):
         return None
     return None
 
+import requests
+from bs4 import BeautifulSoup
+
 def extraer_datos_noticia(url):
     """Extrae datos clave de una noticia"""
     try:
         response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
         if response.status_code != 200:
+            print(f"⚠️ No se pudo obtener la noticia: {url}")
             return None
 
         sopa = BeautifulSoup(response.text, "html.parser")
         texto = sopa.get_text().lower()
+
+        # 📌 1️⃣ Extraer título de la noticia (o conflicto)
+        titulo = sopa.title.string.strip() if sopa.title else "Título desconocido"
+
+        # 📌 2️⃣ Extraer fecha (solo año)
+        fecha = "Desconocida"
+        for palabra in texto.split():
+            if palabra.isdigit() and len(palabra) == 4:  # Buscar años como "2023"
+                fecha = palabra
+                break
+
+        # 📌 3️⃣ Extraer ubicación (ciudad/localidad)
+        ubicacion = None
+        provincias = ["buenos aires", "santa fe", "córdoba", "mendoza", "entre ríos", "chaco"]  # Expandir con más provincias
+        for palabra in texto.split():
+            if palabra in provincias:
+                ubicacion = palabra
+                break
+        
+        # 📌 4️⃣ Extraer mención a agua
+        menciona_agua = any(agua in texto for agua in ["río", "laguna", "napas", "agua", "contaminación hídrica"])
+
+        # 📌 5️⃣ Buscar agroquímicos
+        AGROQUIMICOS_CATEGORIAS = {
+            "herbicida": ["glifosato", "atrazina", "2,4-D"],
+            "insecticida": ["clorpirifos", "imidacloprid", "cipermetrina"],
+            "fungicida": ["mancozeb", "carbendazim", "triazol"]
+        }
+        agroquimicos = []
+        categoria_filtro = []
+        for categoria, lista in AGROQUIMICOS_CATEGORIAS.items():
+            for quimico in lista:
+                if quimico in texto:
+                    agroquimicos.append(quimico)
+                    categoria_filtro.append(categoria)
+
+        # 📌 6️⃣ Detectar protestas o denuncias
+        menciona_protesta = any(palabra in texto for palabra in ["denuncia", "protesta", "marcha", "juicio", "vecinos", "movilización"])
+
+        # 📌 7️⃣ Devolver la noticia en formato diccionario
+        noticia = {
+            "conflicto": titulo,
+            "url": url,
+            "fecha": fecha,
+            "fuente": url.split("/")[2],  # Extrae el dominio como fuente
+            "ubicacion": ubicacion if ubicacion else "Desconocida",
+            "agua": "Sí" if menciona_agua else "No",
+            "agroquimicos": ", ".join(agroquimicos),
+            "categoria_filtro": ", ".join(categoria_filtro),
+            "protestas": "Sí" if menciona_protesta else "No"
+        }
+
+        print(f"✅ Noticia extraída: {noticia}")
+        return noticia
+
+    except Exception as e:
+        print(f"❌ Error al extraer la noticia: {url} - {e}")
+        return None
+
         
         # Buscar menciones a ubicaciones (ciudades/localidades)
         ubicacion = None
