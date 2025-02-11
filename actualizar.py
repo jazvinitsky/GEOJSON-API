@@ -118,9 +118,31 @@ for noticia in nuevas_noticias:
                 "categoria_filtro": noticia["categoria_filtro"],
                 "protestas": noticia["protestas"]
             },
-            "geometry": {
-                "type": "Point",
-                "coordinates": noticia["coordenadas"] if noticia["coordenadas"] else [0, 0]
+          if noticia["coordenadas"]:  # Solo agrega si hay coordenadas
+    datos["features"].append({
+        "type": "Feature",
+        "properties": {
+            "conflicto": noticia["conflicto"],
+            "url": noticia["url"],
+            "fecha": noticia["fecha"],
+            "fuente": noticia["fuente"],
+            "ubicacion": noticia["ubicacion"],
+            "agua": noticia["agua"],
+            "agroquimicos": noticia["agroquimicos"],
+            "categoria_filtro": noticia["categoria_filtro"],
+            "protestas": noticia["protestas"]
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": noticia["coordenadas"]
+        }
+    })
+    print(f"🟢 Agregada noticia: {noticia['conflicto']} con coordenadas {noticia['coordenadas']}")
+else:
+    print(f"🚫 Noticia descartada por falta de coordenadas: {noticia['url']}")
+
+else:
+    print(f"🚫 Noticia descartada por falta de coordenadas: {noticia['url']}")
             }
         })
 
